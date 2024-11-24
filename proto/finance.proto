@@ -1,4 +1,5 @@
-isyntax = "proto3";
+syntax = "proto3";
+
 package finance;
 
 service StockService {
@@ -18,7 +19,8 @@ service StockService {
     rpc StreamPrices (PriceRequest) returns (stream PriceResponse);
 }
 
-message TickerListRequest {}
+message TickerListRequest {
+}
 
 message TickerListResponse {
     repeated string tickers = 1;

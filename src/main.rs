@@ -12,7 +12,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     match args.get(1).map(String::as_str) {
         Some("server") => {
             println!("Starting server...");
-            server::run_server(&config.server.host, config.server.port).await?;
+            server::StockServiceImpl::run_server(&config.server.host, config.server.port).await?;
         },
         Some("client") => {
             println!("Starting client...");
