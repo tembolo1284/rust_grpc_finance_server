@@ -1,9 +1,17 @@
-use std::collections::HashMap;
 use rand::Rng;
+use std::collections::HashMap;
 
 pub static TICKERS: &[&str] = &[
-    "AAPL", "MSFT", "GOOG", "AMZN", "META",
-    "NFLX", "TSLA", "NVDA", "AMD", "INTC",
+    "AAPL",
+    "MSFT",
+    "GOOG",
+    "AMZN",
+    "META",
+    "NFLX",
+    "TSLA",
+    "NVDA",
+    "AMD",
+    "INTC",
 ];
 
 pub fn generate_random_ticker_and_price() -> (String, f64) {

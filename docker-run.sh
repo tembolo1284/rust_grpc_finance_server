@@ -4,8 +4,8 @@
 cleanup() {
     echo "Cleaning up existing containers..."
     docker-compose down
-    docker system prune -f
     docker network rm grpc-net 2>/dev/null || true
+    docker system prune -f
 }
 
 # Function to ensure network exists

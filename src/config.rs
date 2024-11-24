@@ -54,20 +54,7 @@ pub fn load_config() -> Result<Config, Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::File;
-    use std::io::Write;
-    use std::fs;
-
-    fn create_test_config(content: &str) -> Result<(), Box<dyn std::error::Error>> {
-        fs::create_dir_all("config")?;
-        let mut file = File::create("config/config.toml")?;
-        file.write_all(content.as_bytes())?;
-        Ok(())
-    }
-
-    fn cleanup_test_config() {
-        let _ = fs::remove_file("config/config.toml");
-    }
+    use tempfile::tempdir;
 
     #[test]
     fn test_default_config() {
@@ -80,7 +67,7 @@ mod tests {
 
     #[test]
     fn test_load_config_default() {
-        cleanup_test_config(); // Ensure no config file exists
+        // This will use the default config since no file exists
         let config = load_config().unwrap();
         assert_eq!(config.server.port, 50051);
         assert_eq!(config.client.port, 50051);
@@ -88,6 +75,9 @@ mod tests {
 
     #[test]
     fn test_load_custom_config() {
+        let dir = tempdir().unwrap();
+        let config_path = dir.path().join("config.toml");
+
         let config_content = r#"
 [server]
 host = "0.0.0.0"
@@ -97,14 +87,14 @@ port = 50051
 host = "grpc-finance-server"
 port = 50051
 "#;
-        create_test_config(config_content).unwrap();
+
+        fs::write(&config_path, config_content).unwrap();
+        std::env::set_var("CONFIG_PATH", config_path.to_str().unwrap());
 
         let config = load_config().unwrap();
         assert_eq!(config.server.host, "0.0.0.0");
         assert_eq!(config.server.port, 50051);
         assert_eq!(config.client.host, "grpc-finance-server");
         assert_eq!(config.client.port, 50051);
-
-        cleanup_test_config();
     }
 }
