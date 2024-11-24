@@ -56,6 +56,18 @@ mod tests {
     use super::*;
     use std::fs::File;
     use std::io::Write;
+    use std::fs;
+
+    fn create_test_config(content: &str) -> Result<(), Box<dyn std::error::Error>> {
+        fs::create_dir_all("config")?;
+        let mut file = File::create("config/config.toml")?;
+        file.write_all(content.as_bytes())?;
+        Ok(())
+    }
+
+    fn cleanup_test_config() {
+        let _ = fs::remove_file("config/config.toml");
+    }
 
     #[test]
     fn test_default_config() {
@@ -68,32 +80,31 @@ mod tests {
 
     #[test]
     fn test_load_config_default() {
+        cleanup_test_config(); // Ensure no config file exists
         let config = load_config().unwrap();
         assert_eq!(config.server.port, 50051);
+        assert_eq!(config.client.port, 50051);
     }
 
     #[test]
     fn test_load_custom_config() {
         let config_content = r#"
-            [server]
-            host = "0.0.0.0"
-            port = 50051
+[server]
+host = "0.0.0.0"
+port = 50051
 
-            [client]
-            host = "localhost"
-            port = 50051
-        "#;
-
-        std::fs::create_dir_all("config").unwrap();
-        let mut file = File::create("config/config.toml").unwrap();
-        file.write_all(config_content.as_bytes()).unwrap();
+[client]
+host = "grpc-finance-server"
+port = 50051
+"#;
+        create_test_config(config_content).unwrap();
 
         let config = load_config().unwrap();
         assert_eq!(config.server.host, "0.0.0.0");
         assert_eq!(config.server.port, 50051);
-        assert_eq!(config.client.host, "localhost");
+        assert_eq!(config.client.host, "grpc-finance-server");
         assert_eq!(config.client.port, 50051);
 
-        std::fs::remove_file("config/config.toml").unwrap();
+        cleanup_test_config();
     }
 }
