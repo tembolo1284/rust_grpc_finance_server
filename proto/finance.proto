@@ -1,0 +1,44 @@
+syntax = "proto3";
+package finance;
+
+service StockService {
+    // Get list of available tickers
+    rpc GetTickerList (TickerListRequest) returns (TickerListResponse);
+    
+    // Get current price for a ticker
+    rpc GetPrice (PriceRequest) returns (PriceResponse);
+    
+    // Get statistics for a ticker
+    rpc GetStats (StatsRequest) returns (StatsResponse);
+    
+    // Stream real-time prices for a ticker
+    rpc StreamPrices (PriceRequest) returns (stream PriceResponse);
+}
+
+message TickerListRequest {}
+
+message TickerListResponse {
+    repeated string tickers = 1;
+}
+
+message PriceRequest {
+    string ticker = 1;
+}
+
+message PriceResponse {
+    string ticker = 1;
+    double price = 2;
+    string formatted_message = 3;
+}
+
+message StatsRequest {
+    string ticker = 1;
+}
+
+message StatsResponse {
+    string ticker = 1;
+    repeated double prices = 2;
+    double average = 3;
+    double std_deviation = 4;
+    string formatted_message = 5;
+}
