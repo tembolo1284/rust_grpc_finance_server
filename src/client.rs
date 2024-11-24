@@ -6,10 +6,28 @@ use crate::finance::{
 };
 
 pub async fn start_client(host: &str, port: u16) -> Result<(), Box<dyn std::error::Error>> {
+    // Add retry logic for Docker container startup timing
+    let max_retries = 5;
+    let mut retry_count = 0;
     let addr = format!("http://{}:{}", host, port);
-    let mut client = StockServiceClient::connect(addr).await?;
+    
+    println!("Attempting to connect to {}", addr);
 
-    println!("Connected to gRPC server");
+    let mut client = loop {
+        match StockServiceClient::connect(addr.clone()).await {
+            Ok(client) => break client,
+            Err(e) => {
+                retry_count += 1;
+                if retry_count >= max_retries {
+                    return Err(format!("Failed to connect after {} attempts: {}", max_retries, e).into());
+                }
+                println!("Connection attempt {} failed, retrying in 2 seconds...", retry_count);
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+            }
+        }
+    };
+
+    println!("Successfully connected to gRPC server");
     println!("\nAvailable commands:");
     println!("- list: Show available tickers");
     println!("- stats <ticker>: Show statistics for a ticker");

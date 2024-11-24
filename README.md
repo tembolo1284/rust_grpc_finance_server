@@ -127,7 +127,7 @@ docker run -d -p 50051:50051 rust-grpc-finance-server server
 
 4. Run the client:
 ```bash
-docker run rust-grpc-finance-server client
+docker run --network host rust-grpc-finance-server client
 ```
 
 ### Useful Docker Commands
@@ -167,7 +167,35 @@ docker run -d --name finance-server --network finance-net -p 50051:50051 rust-gr
 5. Run client in network:
 ```bash
 docker run --network finance-net rust-grpc-finance-server client
+
 ```
+
+## To use the shell script docker setup
+
+1. Make sure all files are in place and build the Docker image:
+
+```
+.docker-run.sh build
+```
+
+2. Start the server:
+
+```
+./docker-run.sh server
+```
+
+3. In another terminal, run the client:
+
+```
+./docker-run.sh client
+```
+
+4. To clean up:
+
+```
+./docker-run.sh clean
+```
+
 
 ## Testing
 
@@ -188,6 +216,13 @@ port = 50051
 host = "127.0.0.1"
 port = 50051
 ```
+
+# Clean up first
+docker-compose down
+docker system prune -f
+
+# Build again
+./docker-run.sh build
 
 ## Service Definition
 The gRPC service is defined in `proto/finance.proto` and provides the following methods:

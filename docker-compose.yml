@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  server:
+    build: .
+    container_name: grpc-finance-server
+    ports:
+      - "50051:50051"
+    command: server
+    networks:
+      - grpc-net
+
+  client:
+    build: .
+    container_name: grpc-finance-client
+    command: client
+    networks:
+      - grpc-net
+    depends_on:
+      - server
+
+networks:
+  grpc-net:
+    name: grpc-net
+    driver: bridge
