@@ -20,15 +20,15 @@ pub struct ClientConfig {
     pub port: u16,
 }
 
-impl Config {
-    pub fn default() -> Self {
+impl Default for Config {
+    fn default() -> Self {
         Config {
             server: ServerConfig {
                 host: "0.0.0.0".to_string(),
                 port: 50051,
             },
             client: ClientConfig {
-                host: "grpc-finance-server".to_string(), // Update default to use container name
+                host: "grpc-finance-server".to_string(),
                 port: 50051,
             },
         }
@@ -49,4 +49,51 @@ pub fn load_config() -> Result<Config, Box<dyn std::error::Error>> {
     let config: Config = toml::from_str(&config_str)?;
     println!("Loaded configuration: {:?}", config);
     Ok(config)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::File;
+    use std::io::Write;
+
+    #[test]
+    fn test_default_config() {
+        let config = Config::default();
+        assert_eq!(config.server.host, "0.0.0.0");
+        assert_eq!(config.server.port, 50051);
+        assert_eq!(config.client.host, "grpc-finance-server");
+        assert_eq!(config.client.port, 50051);
+    }
+
+    #[test]
+    fn test_load_config_default() {
+        let config = load_config().unwrap();
+        assert_eq!(config.server.port, 50051);
+    }
+
+    #[test]
+    fn test_load_custom_config() {
+        let config_content = r#"
+            [server]
+            host = "0.0.0.0"
+            port = 50051
+
+            [client]
+            host = "localhost"
+            port = 50051
+        "#;
+
+        std::fs::create_dir_all("config").unwrap();
+        let mut file = File::create("config/config.toml").unwrap();
+        file.write_all(config_content.as_bytes()).unwrap();
+
+        let config = load_config().unwrap();
+        assert_eq!(config.server.host, "0.0.0.0");
+        assert_eq!(config.server.port, 50051);
+        assert_eq!(config.client.host, "localhost");
+        assert_eq!(config.client.port, 50051);
+
+        std::fs::remove_file("config/config.toml").unwrap();
+    }
 }

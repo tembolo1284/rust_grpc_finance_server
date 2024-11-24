@@ -1,18 +1,16 @@
-use tonic::{transport::Server, Request, Response, Status};
-use tokio::sync::Mutex;
-use tokio_stream::wrappers::ReceiverStream;
-use std::sync::Arc;
-use tokio::sync::mpsc;
-use tokio::time::{interval, Duration};
 use futures::Stream;
 use std::pin::Pin;
+use std::sync::Arc;
+use tokio::sync::mpsc;
+use tokio::sync::Mutex;
+use tokio::time::{interval, Duration};
+use tokio_stream::wrappers::ReceiverStream;
+use tonic::{transport::Server, Request, Response, Status};
 
 use crate::finance::stock_service_server::{StockService, StockServiceServer};
 use crate::finance::{
-    TickerListRequest, TickerListResponse,
-    PriceRequest, PriceResponse,
-    StatsRequest, StatsResponse,
-    MultiplePricesRequest, MultiplePricesResponse,
+    MultiplePricesRequest, MultiplePricesResponse, PriceRequest, PriceResponse, StatsRequest,
+    StatsResponse, TickerListRequest, TickerListResponse,
 };
 use crate::utils::PriceTracker;
 
@@ -49,12 +47,18 @@ impl StockService for StockServiceImpl {
         &self,
         request: Request<TickerListRequest>,
     ) -> Result<Response<TickerListResponse>, Status> {
-        println!("Received ticker list request from {:?}", request.remote_addr());
-        
+        println!(
+            "Received ticker list request from {:?}",
+            request.remote_addr()
+        );
+
         let response = TickerListResponse {
-            tickers: crate::utils::TICKERS.iter().map(|&s| s.to_string()).collect(),
+            tickers: crate::utils::TICKERS
+                .iter()
+                .map(|&s| s.to_string())
+                .collect(),
         };
-        
+
         println!("Sending ticker list response: {:?}", response.tickers);
         Ok(Response::new(response))
     }
@@ -65,11 +69,17 @@ impl StockService for StockServiceImpl {
     ) -> Result<Response<PriceResponse>, Status> {
         let remote_addr = request.remote_addr();
         let ticker = request.into_inner().ticker.to_uppercase();
-        println!("Received price request for ticker: {} from {:?}", ticker, remote_addr);
-        
+        println!(
+            "Received price request for ticker: {} from {:?}",
+            ticker, remote_addr
+        );
+
         if !crate::utils::TICKERS.contains(&ticker.as_str()) {
             println!("Error: Invalid ticker requested: {}", ticker);
-            return Err(Status::invalid_argument(format!("Invalid ticker: {}", ticker)));
+            return Err(Status::invalid_argument(format!(
+                "Invalid ticker: {}",
+                ticker
+            )));
         }
 
         let (_, price) = crate::utils::generate_random_ticker_and_price();
@@ -94,13 +104,18 @@ impl StockService for StockServiceImpl {
         let req = request.into_inner();
         let ticker = req.ticker.to_uppercase();
         let count = req.count;
-        
-        println!("Received multiple prices request for ticker: {} (count: {}) from {:?}", 
-                ticker, count, remote_addr);
-        
+
+        println!(
+            "Received multiple prices request for ticker: {} (count: {}) from {:?}",
+            ticker, count, remote_addr
+        );
+
         if !crate::utils::TICKERS.contains(&ticker.as_str()) {
             println!("Error: Invalid ticker requested: {}", ticker);
-            return Err(Status::invalid_argument(format!("Invalid ticker: {}", ticker)));
+            return Err(Status::invalid_argument(format!(
+                "Invalid ticker: {}",
+                ticker
+            )));
         }
 
         if count <= 0 {
@@ -116,11 +131,8 @@ impl StockService for StockServiceImpl {
             formatted_messages.push(format!("${:.2}", price));
         }
 
-        let formatted_message = format!(
-            "Prices for {}:\n{}", 
-            ticker,
-            formatted_messages.join("\n")
-        );
+        let formatted_message =
+            format!("Prices for {}:\n{}", ticker, formatted_messages.join("\n"));
 
         {
             let mut tracker = self.price_tracker.lock().await;
@@ -143,26 +155,35 @@ impl StockService for StockServiceImpl {
     ) -> Result<Response<StatsResponse>, Status> {
         let remote_addr = request.remote_addr();
         let ticker = request.into_inner().ticker.to_uppercase();
-        println!("Received stats request for ticker: {} from {:?}", ticker, remote_addr);
-        
+        println!(
+            "Received stats request for ticker: {} from {:?}",
+            ticker, remote_addr
+        );
+
         if !crate::utils::TICKERS.contains(&ticker.as_str()) {
             println!("Error: Invalid ticker requested: {}", ticker);
-            return Err(Status::invalid_argument(format!("Invalid ticker: {}", ticker)));
+            return Err(Status::invalid_argument(format!(
+                "Invalid ticker: {}",
+                ticker
+            )));
         }
 
         let tracker = self.price_tracker.lock().await;
-        
+
         let prices = match tracker.get_prices(&ticker) {
             Some(p) => p.clone(),
             None => {
                 println!("Error: No data available for ticker: {}", ticker);
-                return Err(Status::not_found(format!("No data available for ticker: {}", ticker)));
+                return Err(Status::not_found(format!(
+                    "No data available for ticker: {}",
+                    ticker
+                )));
             }
         };
 
         let average = tracker.average(&ticker).unwrap_or(0.0);
         let std_deviation = tracker.std_deviation(&ticker).unwrap_or(0.0);
-        
+
         let formatted_message = format!(
             "Stats for {}:\nPrices: {:?}\nAverage: {:.2}\nStd Dev: {:.2}\n",
             ticker, prices, average, std_deviation
@@ -178,7 +199,8 @@ impl StockService for StockServiceImpl {
         }))
     }
 
-    type StreamPricesStream = Pin<Box<dyn Stream<Item = Result<PriceResponse, Status>> + Send + 'static>>;
+    type StreamPricesStream =
+        Pin<Box<dyn Stream<Item = Result<PriceResponse, Status>> + Send + 'static>>;
 
     async fn stream_prices(
         &self,
@@ -186,11 +208,17 @@ impl StockService for StockServiceImpl {
     ) -> Result<Response<Self::StreamPricesStream>, Status> {
         let remote_addr = request.remote_addr();
         let ticker = request.into_inner().ticker.to_uppercase();
-        println!("Received streaming request for ticker: {} from {:?}", ticker, remote_addr);
-        
+        println!(
+            "Received streaming request for ticker: {} from {:?}",
+            ticker, remote_addr
+        );
+
         if !crate::utils::TICKERS.contains(&ticker.as_str()) {
             println!("Error: Invalid ticker requested: {}", ticker);
-            return Err(Status::invalid_argument(format!("Invalid ticker: {}", ticker)));
+            return Err(Status::invalid_argument(format!(
+                "Invalid ticker: {}",
+                ticker
+            )));
         }
 
         let (tx, rx) = mpsc::channel(32);
@@ -200,7 +228,7 @@ impl StockService for StockServiceImpl {
         tokio::spawn(async move {
             let mut interval = interval(Duration::from_secs(1));
             println!("Starting price stream for ticker: {}", ticker);
-            
+
             loop {
                 interval.tick().await;
                 let (_, price) = crate::utils::generate_random_ticker_and_price();
@@ -213,15 +241,19 @@ impl StockService for StockServiceImpl {
 
                 println!("Streaming price: {}", formatted_message.trim());
 
-                if tx.send(Ok(PriceResponse {
-                    ticker: ticker.clone(),
-                    price,
-                    formatted_message,
-                }))
-                .await
-                .is_err()
+                if tx
+                    .send(Ok(PriceResponse {
+                        ticker: ticker.clone(),
+                        price,
+                        formatted_message,
+                    }))
+                    .await
+                    .is_err()
                 {
-                    println!("Client disconnected from price stream for ticker: {}", ticker);
+                    println!(
+                        "Client disconnected from price stream for ticker: {}",
+                        ticker
+                    );
                     break;
                 }
             }
@@ -229,7 +261,9 @@ impl StockService for StockServiceImpl {
 
         println!("Established price stream for ticker: {}", stream_ticker);
         let output_stream = ReceiverStream::new(rx);
-        Ok(Response::new(Box::pin(output_stream) as Self::StreamPricesStream))
+        Ok(Response::new(
+            Box::pin(output_stream) as Self::StreamPricesStream
+        ))
     }
 }
 

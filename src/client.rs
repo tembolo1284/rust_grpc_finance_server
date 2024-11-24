@@ -1,16 +1,13 @@
-use tokio::io::{AsyncBufReadExt, BufReader};
 use crate::finance::stock_service_client::StockServiceClient;
-use crate::finance::{
-    TickerListRequest, PriceRequest, StatsRequest,
-    MultiplePricesRequest,
-};
+use crate::finance::{MultiplePricesRequest, PriceRequest, StatsRequest, TickerListRequest};
+use tokio::io::{AsyncBufReadExt, BufReader};
 
 pub async fn start_client(host: &str, port: u16) -> Result<(), Box<dyn std::error::Error>> {
     // Add retry logic for Docker container startup timing
     let max_retries = 5;
     let mut retry_count = 0;
     let addr = format!("http://{}:{}", host, port);
-    
+
     println!("Attempting to connect to {}", addr);
 
     let mut client = loop {
@@ -19,9 +16,14 @@ pub async fn start_client(host: &str, port: u16) -> Result<(), Box<dyn std::erro
             Err(e) => {
                 retry_count += 1;
                 if retry_count >= max_retries {
-                    return Err(format!("Failed to connect after {} attempts: {}", max_retries, e).into());
+                    return Err(
+                        format!("Failed to connect after {} attempts: {}", max_retries, e).into(),
+                    );
                 }
-                println!("Connection attempt {} failed, retrying in 2 seconds...", retry_count);
+                println!(
+                    "Connection attempt {} failed, retrying in 2 seconds...",
+                    retry_count
+                );
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
             }
         }
@@ -41,7 +43,7 @@ pub async fn start_client(host: &str, port: u16) -> Result<(), Box<dyn std::erro
     loop {
         println!("Enter a command:");
         buffer.clear();
-        
+
         if reader.read_line(&mut buffer).await? == 0 {
             break;
         }
@@ -56,7 +58,7 @@ pub async fn start_client(host: &str, port: u16) -> Result<(), Box<dyn std::erro
                 Ok(response) => {
                     let tickers = response.into_inner().tickers;
                     println!("Available tickers: {}", tickers.join(", "));
-                },
+                }
                 Err(e) => eprintln!("Error getting ticker list: {}", e),
             }
         } else if command == "quit" || command == "exit" {
@@ -68,7 +70,7 @@ pub async fn start_client(host: &str, port: u16) -> Result<(), Box<dyn std::erro
                 Ok(response) => {
                     let stats = response.into_inner();
                     println!("{}", stats.formatted_message);
-                },
+                }
                 Err(e) => eprintln!("Error getting stats: {}", e),
             }
         } else {
@@ -79,31 +81,37 @@ pub async fn start_client(host: &str, port: u16) -> Result<(), Box<dyn std::erro
                     // Try to parse the count
                     match count_str.parse::<i32>() {
                         Ok(count) => {
-                            match client.get_multiple_prices(MultiplePricesRequest {
-                                ticker: ticker.to_string(),
-                                count,
-                            }).await {
+                            match client
+                                .get_multiple_prices(MultiplePricesRequest {
+                                    ticker: ticker.to_string(),
+                                    count,
+                                })
+                                .await
+                            {
                                 Ok(response) => {
                                     println!("{}", response.into_inner().formatted_message);
-                                },
+                                }
                                 Err(e) => eprintln!("Error getting multiple prices: {}", e),
                             }
-                        },
+                        }
                         Err(_) => eprintln!("Invalid number format for count"),
                     }
-                },
+                }
                 [ticker] => {
                     // Single price request
-                    match client.get_price(PriceRequest { 
-                        ticker: ticker.to_string() 
-                    }).await {
+                    match client
+                        .get_price(PriceRequest {
+                            ticker: ticker.to_string(),
+                        })
+                        .await
+                    {
                         Ok(response) => {
                             let price_info = response.into_inner();
                             println!("{}", price_info.formatted_message);
-                        },
+                        }
                         Err(e) => eprintln!("Error getting price: {}", e),
                     }
-                },
+                }
                 _ => println!("Invalid command format"),
             }
         }

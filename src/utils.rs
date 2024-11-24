@@ -17,21 +17,20 @@ pub fn format_price(ticker: &str, price: f64) -> String {
     format!("Current price for {}: ${:.2}\n", ticker, price)
 }
 
+#[derive(Default)]
 pub struct PriceTracker {
     prices: HashMap<String, Vec<f64>>,
 }
 
 impl PriceTracker {
     pub fn new() -> Self {
-        PriceTracker {
-            prices: HashMap::new(),
-        }
+        Self::default()
     }
 
     pub fn add_price(&mut self, ticker: &str, price: f64) {
         self.prices
             .entry(ticker.to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(price);
     }
 

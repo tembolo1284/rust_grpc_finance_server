@@ -1,7 +1,7 @@
-pub mod utils;
 pub mod client;
-pub mod server;
 pub mod config;
+pub mod server;
+pub mod utils;
 
 // This will include the generated protobuf code
 pub mod finance {

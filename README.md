@@ -1,29 +1,28 @@
 # RustGRPCFinanceServer
 
+[![Rust gRPC Service CI/CD](https://github.com/tembolo1284/rust_grpc_finance_server/actions/workflows/rust.yml/badge.svg)](https://github.com/tembolo1284/rust_grpc_finance_server/actions/workflows/rust.yml)
+
 ## Overview
-**RustGRPCFinanceServer** is a gRPC server written in Rust. It simulates stock price streaming for predefined tickers (AAPL, MSFT, GOOGL, AMZN, META, NFLX, TSLA, NVDA, AMD, INTC) and allows clients to fetch real-time prices. The server tracks historical prices and provides statistics such as average price and standard deviation upon request.
+**RustGRPCFinanceServer** is a gRPC server written in Rust that simulates real-time stock price streaming. It provides price data for predefined tickers (AAPL, MSFT, GOOG, AMZN, META, NFLX, TSLA, NVDA, AMD, INTC), tracks historical prices, and offers statistical analysis capabilities.
 
 ## Features
 - **gRPC-based Communication**: High-performance, bidirectional streaming between client and server
 - **Protocol Buffers**: Strongly typed message definitions for all service interactions
 - **Async/Await**: Modern asynchronous programming using Tokio runtime
-- **Simulated Stock Prices**: Streams random prices for predefined tickers
+- **Multiple Price Requests**: Get single or multiple prices for any ticker
 - **Historical Data Tracking**: Tracks all prices for each ticker
-- **Statistics**: Provides average and standard deviation for requested tickers
+- **Statistical Analysis**: Provides average and standard deviation for requested tickers
 - **Configurable Server**: Reads host and port information from `config/config.toml`
-- **Dockerized Deployment**: Run the server in a containerized environment
+- **Dockerized Deployment**: Complete Docker support with compose and networking
+- **CI/CD Pipeline**: GitHub Actions workflow for testing and deployment
 
 ## Folder Structure
 ```plaintext
 RustGRPCFinanceServer/
 
-│
-
 ├── proto/
 
 │   └── finance.proto        # Protocol Buffers service definitions
-
-│
 
 ├── src/
 
@@ -35,49 +34,51 @@ RustGRPCFinanceServer/
 
 │   ├── config.rs           # Configuration file parser
 
-│   ├── utils.rs            # Utility functions (price tracker and random generator)
+│   ├── utils.rs            # Utility functions
 
 │   └── lib.rs              # Library interface
 
-│
-
 ├── config/
 
-│   └── config.toml         # Configuration file for server host and port
-
-│
+│   └── config.toml         # Configuration file
 
 ├── tests/
 
-│   └── utils_tests.rs      # Unit tests for utility functions
+│   └── integration_tests.rs # Integration tests
 
-│
+├── build.rs                # Protocol Buffers compilation script
 
-├── build.rs               # Protocol Buffers compilation script
+├── Dockerfile             # Docker configuration
 
-├── Dockerfile            # Docker configuration
+├── docker-compose.yml     # Docker Compose configuration
 
-├── README.md            # Project documentation
+├── docker-run.sh         # Docker management script
 
-├── Cargo.toml           # Rust package configuration
+├── .dockerignore         # Docker ignore file
 
 └── .github/
 
     └── workflows/
 
-        └── rust.yml     # GitHub Actions CI/CD configuration
+        └── rust.yml      # GitHub Actions CI/CD configuration
 ```
 
 ## Prerequisites
-- Rust: Install Rust via [rustup](https://rustup.rs/)
-- Protocol Buffers Compiler: Install `protoc` for your platform
-- Docker (optional): Install Docker for containerized deployment
+- Rust (install via [rustup](https://rustup.rs/))
+- Protocol Buffers Compiler (`protoc`)
+  ```bash
+  # Ubuntu/Debian
+  sudo apt-get install protobuf-compiler
+  # macOS
+  brew install protobuf
+  ```
+- Docker (optional, for containerized deployment)
 
 ## Installation
 
 1. Clone the repository:
 ```bash
-git clone <project_url>
+git clone https://github.com/tembolo1284/rust_grpc_finance_server.git
 cd rust_grpc_finance_server
 ```
 
@@ -86,150 +87,114 @@ cd rust_grpc_finance_server
 cargo build --release
 ```
 
-The executable will be located at `target/release/rust_grpc_finance_server`
-
 ## Running the Application
 
-### Starting the Server
+### Local Execution
+
+Start the server:
 ```bash
 cargo run --release -- server
 ```
 
-The server will start and listen for connections on the host and port specified in `config/config.toml` (default: `127.0.0.1:50051`)
-
-### Starting the Client
+Start the client:
 ```bash
 cargo run --release -- client
 ```
 
-### Available Commands
-- `list` - Get a list of available tickers
-- `stats <ticker>` - Get statistics for a specific ticker (e.g., `stats AAPL`)
-- `<ticker>` - Get current price for a specific ticker (e.g., `AMZN`)
-- `quit` or `exit` - Disconnect from the server
+### Docker Execution
 
-## Docker Deployment
-
-1. Build the Docker image:
+Using docker-run.sh (recommended):
 ```bash
+# Build
+./docker-run.sh build
+
+# Start server
+./docker-run.sh server
+
+# In another terminal, start client
+./docker-run.sh client
+
+# Clean up
+./docker-run.sh clean
+```
+
+Manual Docker commands:
+```bash
+# Build image
 docker build -t rust-grpc-finance-server .
-```
 
-2. Run the container (server):
-```bash
+# Run server
 docker run -p 50051:50051 rust-grpc-finance-server server
-```
 
-3. Run a detached container (server):
-```bash
-docker run -d -p 50051:50051 rust-grpc-finance-server server
-```
-
-4. Run the client:
-```bash
+# Run client
 docker run --network host rust-grpc-finance-server client
 ```
 
-### Useful Docker Commands
-```bash
-# View running containers
-docker ps
-
-# View container logs
-docker logs <container-id>
-
-# Stop container
-docker stop <container-id>
-```
+## Available Commands
+- `list` - Show available tickers
+- `stats <ticker>` - Show statistics for a ticker (e.g., `stats GOOG`)
+- `<ticker>` - Get current price (e.g., `GOOG`)
+- `<ticker> <count>` - Get multiple prices (e.g., `GOOG 5`)
+- `quit` or `exit` - Disconnect from server
 
 ## Docker Network Setup
 
-1. Stop any running containers:
-```bash
-docker stop $(docker ps -a -q)
-```
-
-2. Remove existing containers:
-```bash
-docker rm finance-server 2>/dev/null || true
-```
-
-3. Create network (if not exists):
+1. Create network:
 ```bash
 docker network create finance-net
 ```
 
-4. Start server in network:
+2. Run server in network:
 ```bash
-docker run -d --name finance-server --network finance-net -p 50051:50051 rust-grpc-finance-server server
+docker run -d --name grpc-finance-server --network finance-net -p 50051:50051 rust-grpc-finance-server server
 ```
 
-5. Run client in network:
+3. Run client in network:
 ```bash
 docker run --network finance-net rust-grpc-finance-server client
-
-```
-
-## To use the shell script docker setup
-
-1. Make sure all files are in place and build the Docker image:
-
-```
-.docker-run.sh build
-```
-
-2. Start the server:
-
-```
-./docker-run.sh server
-```
-
-3. In another terminal, run the client:
-
-```
-./docker-run.sh client
-```
-
-4. To clean up:
-
-```
-./docker-run.sh clean
-```
-
-
-## Testing
-
-Run the test suite:
-```bash
-cargo test
 ```
 
 ## Configuration
 
-The server configuration is stored in `config/config.toml`:
+Default configuration (`config/config.toml`):
 ```toml
 [server]
-host = "127.0.0.1"
+host = "0.0.0.0"    # Listen on all interfaces
 port = 50051
 
 [client]
-host = "127.0.0.1"
+host = "grpc-finance-server"  # Docker service name
 port = 50051
 ```
 
-# Clean up first
-docker-compose down
-docker system prune -f
+## Testing
 
-# Build again
-./docker-run.sh build
+Run all tests:
+```bash
+# Run tests with output
+cargo test -- --nocapture
+
+# Run specific test
+cargo test test_name -- --nocapture
+```
 
 ## Service Definition
-The gRPC service is defined in `proto/finance.proto` and provides the following methods:
-- `GetTickerList`: Returns list of available tickers
+The gRPC service (`proto/finance.proto`) provides:
+- `GetTickerList`: Returns available tickers
 - `GetPrice`: Returns current price for a ticker
-- `GetStats`: Returns statistical information for a ticker
-- `StreamPrices`: Streams real-time prices for a ticker (planned feature)
+- `GetMultiplePrices`: Returns multiple prices for a ticker
+- `GetStats`: Returns statistical information
+- `StreamPrices`: Streams real-time prices (planned feature)
+
+## CI/CD
+
+The project uses GitHub Actions for:
+- Running tests
+- Code linting (clippy)
+- Format checking
+- Docker image building
+- Container registry publishing
 
 ## Author
 Paul Nikholas Lopez - [nik.lopez381@gmail.com](mailto:nik.lopez381@gmail.com)
+
