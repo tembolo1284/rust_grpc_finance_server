@@ -1,18 +1,18 @@
 [package]
-name = "rust_tcp_finance_server"
+name = "rust_grpc_finance_server"
 version = "0.1.0"
 edition = "2021"
 description = "A gRPC server in Rust for simulating stock price streaming and providing statistical analysis."
 authors = ["Paul Nikholas Lopez <nik.lopez381@gmail.com>"]
 license = "MIT"
-repository = "https://github.com/tembolo1284/rust_tcp_finance_server"
+repository = "https://github.com/tembolo1284/rust_grpc_finance_server"
 
 [lib]
-name = "rust_tcp_finance_server"
+name = "rust_grpc_finance_server"
 path = "src/lib.rs"
 
 [[bin]]
-name = "rust_tcp_finance_server"
+name = "rust_grpc_finance_server"
 path = "src/main.rs"
 
 [dependencies]

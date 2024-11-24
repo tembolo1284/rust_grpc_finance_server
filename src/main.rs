@@ -1,5 +1,5 @@
 use std::error::Error;
-use rust_tcp_finance_server::{config, server, client};
+use rust_grpc_finance_server::{config, server, client};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

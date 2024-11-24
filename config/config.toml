@@ -1,7 +1,0 @@
-[server]
-host = "127.0.0.1"
-port = 50051
-
-[client]
-host = "127.0.0.1"
-port = 50051

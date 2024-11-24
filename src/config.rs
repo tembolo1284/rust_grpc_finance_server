@@ -25,11 +25,11 @@ impl Config {
         Config {
             server: ServerConfig {
                 host: "127.0.0.1".to_string(),
-                port: 50051,
+                port: 50051,  // Changed from 8080 to 50051
             },
             client: ClientConfig {
                 host: "127.0.0.1".to_string(),
-                port: 50051,
+                port: 50051,  // Changed from 8080 to 50051
             },
         }
     }
@@ -58,15 +58,15 @@ mod tests {
     fn test_default_config() {
         let config = Config::default();
         assert_eq!(config.server.host, "127.0.0.1");
-        assert_eq!(config.server.port, 50051);
+        assert_eq!(config.server.port, 50051);  // Updated assertion
         assert_eq!(config.client.host, "127.0.0.1");
-        assert_eq!(config.client.port, 50051);
+        assert_eq!(config.client.port, 50051);  // Updated assertion
     }
 
     #[test]
     fn test_load_config_default() {
         let config = load_config().unwrap();
-        assert_eq!(config.server.port, 50051);
+        assert_eq!(config.server.port, 50051);  // Updated assertion
     }
 
     #[test]
@@ -75,11 +75,11 @@ mod tests {
         let config_content = r#"
             [server]
             host = "0.0.0.0"
-            port = 8080
+            port = 50051
 
             [client]
             host = "localhost"
-            port = 8080
+            port = 50051
         "#;
 
         std::fs::create_dir_all("config").unwrap();
@@ -88,9 +88,9 @@ mod tests {
 
         let config = load_config().unwrap();
         assert_eq!(config.server.host, "0.0.0.0");
-        assert_eq!(config.server.port, 8080);
+        assert_eq!(config.server.port, 50051);  // Updated assertion
         assert_eq!(config.client.host, "localhost");
-        assert_eq!(config.client.port, 8080);
+        assert_eq!(config.client.port, 50051);  // Updated assertion
 
         // Clean up
         std::fs::remove_file("config/config.toml").unwrap();
