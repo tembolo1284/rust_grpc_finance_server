@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use rand::Rng;
 
 pub static TICKERS: &[&str] = &[
-    "AAPL", "MSFT", "GOOGL", "AMZN", "META", 
+    "AAPL", "MSFT", "GOOG", "AMZN", "META", 
     "NFLX", "TSLA", "NVDA", "AMD", "INTC"
 ];
 

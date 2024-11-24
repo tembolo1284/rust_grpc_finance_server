@@ -1,4 +1,4 @@
-syntax = "proto3";
+isyntax = "proto3";
 package finance;
 
 service StockService {
@@ -7,6 +7,9 @@ service StockService {
     
     // Get current price for a ticker
     rpc GetPrice (PriceRequest) returns (PriceResponse);
+    
+    // Get multiple prices for a ticker
+    rpc GetMultiplePrices (MultiplePricesRequest) returns (MultiplePricesResponse);
     
     // Get statistics for a ticker
     rpc GetStats (StatsRequest) returns (StatsResponse);
@@ -28,6 +31,17 @@ message PriceRequest {
 message PriceResponse {
     string ticker = 1;
     double price = 2;
+    string formatted_message = 3;
+}
+
+message MultiplePricesRequest {
+    string ticker = 1;
+    int32 count = 2;
+}
+
+message MultiplePricesResponse {
+    string ticker = 1;
+    repeated double prices = 2;
     string formatted_message = 3;
 }
 
