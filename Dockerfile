@@ -21,14 +21,14 @@ RUN apt-get update && \
     apt-get install -y libssl-dev ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# Create config directory
+# Create directories
 RUN mkdir -p /etc/rust_grpc_finance_server
 
 # Copy the build artifact from the build stage
 COPY --from=builder /usr/src/rust_grpc_finance_server/target/release/rust_grpc_finance_server /usr/local/bin/
 
-# Copy the config file
-COPY config/config.toml /etc/rust_grpc_finance_server/config.toml
+# Create config directory and copy config file
+COPY ./config/config.toml /etc/rust_grpc_finance_server/config.toml
 
 # Create a non-root user
 RUN useradd -ms /bin/bash grpcuser && \
