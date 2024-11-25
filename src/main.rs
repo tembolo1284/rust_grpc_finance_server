@@ -8,11 +8,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Parse command line arguments
     let args: Vec<String> = std::env::args().collect();
-
     match args.get(1).map(String::as_str) {
         Some("server") => {
             println!("Starting server...");
-            server::StockServiceImpl::run_server(&config.server.host, config.server.port).await?;
+            server::run_server(&config.server.host, config.server.port).await?;
         }
         Some("client") => {
             println!("Starting client...");
@@ -25,7 +24,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             std::process::exit(1);
         }
     }
-
     Ok(())
 }
 

@@ -2,16 +2,7 @@ use rand::Rng;
 use std::collections::HashMap;
 
 pub static TICKERS: &[&str] = &[
-    "AAPL",
-    "MSFT",
-    "GOOG",
-    "AMZN",
-    "META",
-    "NFLX",
-    "TSLA",
-    "NVDA",
-    "AMD",
-    "INTC",
+    "AAPL", "MSFT", "GOOG", "AMZN", "META", "NFLX", "TSLA", "NVDA", "AMD", "INTC",
 ];
 
 pub fn generate_random_ticker_and_price() -> (String, f64) {
@@ -74,6 +65,18 @@ impl PriceTracker {
             }
         })
     }
+
+    pub fn get_stats(&self, ticker: &str) -> (Vec<f64>, f64, f64) {
+        let prices = self
+            .get_prices(ticker)
+            .map(|p| p.clone())
+            .unwrap_or_default();
+
+        let average = self.average(ticker).unwrap_or(0.0);
+        let std_dev = self.std_deviation(ticker).unwrap_or(0.0);
+
+        (prices, average, std_dev)
+    }
 }
 
 #[cfg(test)]
@@ -85,18 +88,13 @@ mod tests {
         let mut tracker = PriceTracker::new();
         let ticker = "AAPL";
 
-        // Test adding prices
         tracker.add_price(ticker, 150.0);
         tracker.add_price(ticker, 160.0);
         tracker.add_price(ticker, 170.0);
 
-        // Test getting prices
         assert_eq!(tracker.get_prices(ticker), Some(&vec![150.0, 160.0, 170.0]));
-
-        // Test average
         assert_eq!(tracker.average(ticker), Some(160.0));
 
-        // Test standard deviation
         let std_dev = tracker.std_deviation(ticker).unwrap();
         assert!((std_dev - 8.16496580927726).abs() < 0.000001);
     }
