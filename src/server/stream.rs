@@ -1,21 +1,24 @@
+use super::service::StockServiceImpl;
+use crate::finance::PriceResponse;
 use futures::Stream;
 use std::pin::Pin;
 use tokio::sync::mpsc;
 use tokio::time::{interval, Duration};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
-use crate::finance::PriceResponse;
-use super::service::StockServiceImpl;
 
 impl StockServiceImpl {
     pub(crate) async fn handle_stream_prices(
         &self,
         request: Request<crate::finance::PriceRequest>,
-    ) -> Result<Response<Pin<Box<dyn Stream<Item = Result<PriceResponse, Status>> + Send + 'static>>>, Status> {
+    ) -> Result<
+        Response<Pin<Box<dyn Stream<Item = Result<PriceResponse, Status>> + Send + 'static>>>,
+        Status,
+    > {
         let remote_addr = request
             .remote_addr()
             .unwrap_or_else(|| "unknown".parse().unwrap());
-            
+
         let ticker = request.into_inner().ticker.to_uppercase();
         println!(
             "Received streaming request for ticker: {} from {}",
@@ -64,18 +67,22 @@ impl StockServiceImpl {
                         "Client disconnected from price stream for ticker: {}",
                         ticker
                     );
-                    if let Ok(addr) = remote_addr.to_string().parse() {
-                        service_clone.unregister_client(addr).await;
-                    }
+                    // No need to explicitly unregister - inactivity monitoring will handle it
                     break;
+                }
+
+                // Update last activity timestamp for the client
+                if let Ok(addr) = remote_addr.to_string().parse() {
+                    service_clone.update_last_activity(Some(addr)).await;
                 }
             }
         });
 
         println!("Established price stream for ticker: {}", stream_ticker);
         let output_stream = ReceiverStream::new(rx);
-        Ok(Response::new(
-            Box::pin(output_stream) as Pin<Box<dyn Stream<Item = Result<PriceResponse, Status>> + Send + 'static>>
-        ))
+        Ok(Response::new(Box::pin(output_stream)
+            as Pin<
+                Box<dyn Stream<Item = Result<PriceResponse, Status>> + Send + 'static>,
+            >))
     }
 }

@@ -55,7 +55,12 @@ pub fn load_config() -> Result<Config, Box<dyn std::error::Error>> {
         toml::from_str(&config_str)?
     };
 
+    // Ensure the environment variable `GRPC_CLIENT_HOST` always overrides
     if let Ok(host) = env::var("GRPC_CLIENT_HOST") {
+        println!(
+            "Environment override applied for GRPC_CLIENT_HOST: {}",
+            host
+        );
         config.client.host = host;
     }
 
@@ -70,33 +75,49 @@ mod tests {
 
     #[test]
     fn test_default_config() {
+        // Ensure no environment variables affect this test
         env::remove_var("GRPC_CLIENT_HOST");
         let config = Config::default();
         assert_eq!(config.server.host, "0.0.0.0");
         assert_eq!(config.server.port, 50051);
-        assert_eq!(config.client.host, "127.0.0.1"); // Updated default
+        assert_eq!(config.client.host, "127.0.0.1"); // Matches default
         assert_eq!(config.client.port, 50051);
     }
 
     #[test]
     fn test_default_config_with_env() {
+        // Set the environment variable
         env::set_var("GRPC_CLIENT_HOST", "test-host");
+
+        // Create the default configuration
         let config = Config::default();
+
+        // Check that the environment variable overrides the default
         assert_eq!(config.client.host, "test-host");
+
+        // Clean up the environment variable
         env::remove_var("GRPC_CLIENT_HOST");
     }
 
     #[test]
     fn test_load_config_default() {
+        // Ensure no environment variables affect this test
         env::remove_var("GRPC_CLIENT_HOST");
+        env::remove_var("CONFIG_PATH");
+
+        // Load the configuration
         let config = load_config().unwrap();
+
+        // Verify defaults
+        assert_eq!(config.server.host, "0.0.0.0");
         assert_eq!(config.server.port, 50051);
+        assert_eq!(config.client.host, "127.0.0.1");
         assert_eq!(config.client.port, 50051);
-        assert_eq!(config.client.host, "127.0.0.1"); // Updated default
     }
 
     #[test]
     fn test_load_custom_config() {
+        // Create a temporary directory for the custom configuration file
         let dir = tempdir().unwrap();
         let config_path = dir.path().join("config.toml");
         let config_content = r#"
@@ -108,27 +129,26 @@ host = "grpc-finance-server"
 port = 50051
 "#;
         fs::write(&config_path, config_content).unwrap();
+
+        // Set the CONFIG_PATH environment variable to point to the custom config
         env::set_var("CONFIG_PATH", config_path.to_str().unwrap());
 
+        // Ensure no GRPC_CLIENT_HOST override
         env::remove_var("GRPC_CLIENT_HOST");
+
+        // Load the custom configuration
         let config = load_config().unwrap();
         assert_eq!(config.server.host, "0.0.0.0");
         assert_eq!(config.server.port, 50051);
         assert_eq!(config.client.host, "grpc-finance-server");
         assert_eq!(config.client.port, 50051);
 
+        // Test environment override
         env::set_var("GRPC_CLIENT_HOST", "test-host");
         let config = load_config().unwrap();
         assert_eq!(config.client.host, "test-host");
 
-        env::remove_var("GRPC_CLIENT_HOST");
-    }
-
-    #[test]
-    fn test_config_environment_override() {
-        env::set_var("GRPC_CLIENT_HOST", "override-host");
-        let config = load_config().unwrap();
-        assert_eq!(config.client.host, "override-host");
+        // Clean up environment variables
         env::remove_var("GRPC_CLIENT_HOST");
     }
 }

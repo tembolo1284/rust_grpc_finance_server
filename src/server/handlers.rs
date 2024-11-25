@@ -1,11 +1,9 @@
-use tonic::{Request, Response, Status};
-use crate::finance::{
-    TickerListRequest, TickerListResponse,
-    PriceRequest, PriceResponse,
-    MultiplePricesRequest, MultiplePricesResponse,
-    StatsRequest, StatsResponse,
-};
 use super::service::StockServiceImpl;
+use crate::finance::{
+    MultiplePricesRequest, MultiplePricesResponse, PriceRequest, PriceResponse, StatsRequest,
+    StatsResponse, TickerListRequest, TickerListResponse,
+};
+use tonic::{Request, Response, Status};
 
 impl StockServiceImpl {
     pub(crate) async fn handle_get_ticker_list(
@@ -97,8 +95,9 @@ impl StockServiceImpl {
             price_messages.push(format!("{}. Price for {}: ${:.2}", i + 1, ticker, price));
         }
 
-        let formatted_message = format!("Generated {} prices for {}:\n{}", 
-            count, 
+        let formatted_message = format!(
+            "Generated {} prices for {}:\n{}",
+            count,
             ticker,
             price_messages.join("\n")
         );
