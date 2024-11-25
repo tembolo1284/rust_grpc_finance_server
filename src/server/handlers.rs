@@ -87,15 +87,21 @@ impl StockServiceImpl {
         }
 
         let mut prices = Vec::with_capacity(count as usize);
+        let mut price_messages = Vec::with_capacity(count as usize);
         let mut tracker = self.price_tracker.lock().await;
 
-        for _ in 0..count {
+        for i in 0..count {
             let (_, price) = crate::utils::generate_random_ticker_and_price();
             tracker.add_price(&ticker, price);
             prices.push(price);
+            price_messages.push(format!("{}. Price for {}: ${:.2}", i + 1, ticker, price));
         }
 
-        let formatted_message = format!("Generated {} prices for {}", count, ticker);
+        let formatted_message = format!("Generated {} prices for {}:\n{}", 
+            count, 
+            ticker,
+            price_messages.join("\n")
+        );
         println!("Sending multiple prices response: {}", formatted_message);
 
         Ok(Response::new(MultiplePricesResponse {

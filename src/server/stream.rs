@@ -12,10 +12,10 @@ impl StockServiceImpl {
         &self,
         request: Request<crate::finance::PriceRequest>,
     ) -> Result<Response<Pin<Box<dyn Stream<Item = Result<PriceResponse, Status>> + Send + 'static>>>, Status> {
-        self.increment_clients();
         let remote_addr = request
             .remote_addr()
             .unwrap_or_else(|| "unknown".parse().unwrap());
+            
         let ticker = request.into_inner().ticker.to_uppercase();
         println!(
             "Received streaming request for ticker: {} from {}",
@@ -23,7 +23,6 @@ impl StockServiceImpl {
         );
 
         if !crate::utils::TICKERS.contains(&ticker.as_str()) {
-            self.decrement_clients();
             println!("Error: Invalid ticker requested: {}", ticker);
             return Err(Status::invalid_argument(format!(
                 "Invalid ticker: {}",
@@ -65,7 +64,9 @@ impl StockServiceImpl {
                         "Client disconnected from price stream for ticker: {}",
                         ticker
                     );
-                    service_clone.decrement_clients();
+                    if let Ok(addr) = remote_addr.to_string().parse() {
+                        service_clone.unregister_client(addr).await;
+                    }
                     break;
                 }
             }
