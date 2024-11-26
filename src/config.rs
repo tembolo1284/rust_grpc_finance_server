@@ -71,36 +71,53 @@ pub fn load_config() -> Result<Config, Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Once;
     use tempfile::tempdir;
+
+    // Used to ensure environment cleanup between tests
+    static INIT: Once = Once::new();
+
+    fn setup() {
+        INIT.call_once(|| {
+            // Clean environment before running tests
+            env::remove_var("GRPC_CLIENT_HOST");
+            env::remove_var("CONFIG_PATH");
+        });
+    }
 
     #[test]
     fn test_default_config() {
-        // Ensure no environment variables affect this test
+        setup();
         env::remove_var("GRPC_CLIENT_HOST");
         let config = Config::default();
         assert_eq!(config.server.host, "0.0.0.0");
         assert_eq!(config.server.port, 50051);
-        assert_eq!(config.client.host, "127.0.0.1"); // Matches default
+        assert_eq!(config.client.host, "127.0.0.1");
         assert_eq!(config.client.port, 50051);
     }
 
     #[test]
     fn test_default_config_with_env() {
+        setup();
+        // First ensure the environment is clean
+        env::remove_var("GRPC_CLIENT_HOST");
+        
         // Set the environment variable
         env::set_var("GRPC_CLIENT_HOST", "test-host");
-
+        
         // Create the default configuration
         let config = Config::default();
-
+        
         // Check that the environment variable overrides the default
         assert_eq!(config.client.host, "test-host");
-
-        // Clean up the environment variable
+        
+        // Clean up
         env::remove_var("GRPC_CLIENT_HOST");
     }
 
     #[test]
     fn test_load_config_default() {
+        setup();
         // Ensure no environment variables affect this test
         env::remove_var("GRPC_CLIENT_HOST");
         env::remove_var("CONFIG_PATH");
@@ -117,6 +134,7 @@ mod tests {
 
     #[test]
     fn test_load_custom_config() {
+        setup();
         // Create a temporary directory for the custom configuration file
         let dir = tempdir().unwrap();
         let config_path = dir.path().join("config.toml");
@@ -149,6 +167,7 @@ port = 50051
         assert_eq!(config.client.host, "test-host");
 
         // Clean up environment variables
+        env::remove_var("CONFIG_PATH");
         env::remove_var("GRPC_CLIENT_HOST");
     }
 }

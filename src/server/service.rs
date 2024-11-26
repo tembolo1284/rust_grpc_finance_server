@@ -11,6 +11,12 @@ pub struct StockServiceImpl {
     pub(crate) active_clients: Arc<Mutex<HashMap<SocketAddr, SystemTime>>>,
 }
 
+impl Default for StockServiceImpl {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StockServiceImpl {
     pub fn new() -> Self {
         StockServiceImpl {

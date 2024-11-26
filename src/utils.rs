@@ -67,14 +67,9 @@ impl PriceTracker {
     }
 
     pub fn get_stats(&self, ticker: &str) -> (Vec<f64>, f64, f64) {
-        let prices = self
-            .get_prices(ticker)
-            .map(|p| p.clone())
-            .unwrap_or_default();
-
+        let prices = self.get_prices(ticker).cloned().unwrap_or_default();
         let average = self.average(ticker).unwrap_or(0.0);
         let std_dev = self.std_deviation(ticker).unwrap_or(0.0);
-
         (prices, average, std_dev)
     }
 }
@@ -87,14 +82,11 @@ mod tests {
     fn test_price_tracker() {
         let mut tracker = PriceTracker::new();
         let ticker = "AAPL";
-
         tracker.add_price(ticker, 150.0);
         tracker.add_price(ticker, 160.0);
         tracker.add_price(ticker, 170.0);
-
         assert_eq!(tracker.get_prices(ticker), Some(&vec![150.0, 160.0, 170.0]));
         assert_eq!(tracker.average(ticker), Some(160.0));
-
         let std_dev = tracker.std_deviation(ticker).unwrap();
         assert!((std_dev - 8.16496580927726).abs() < 0.000001);
     }
