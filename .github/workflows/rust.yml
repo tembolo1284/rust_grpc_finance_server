@@ -8,72 +8,57 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 jobs:
-  test:
-    name: Test
+  build:
+    name: Build and Deploy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      
       - name: Install protoc
         run: |
           sudo apt-get update
           sudo apt-get install -y protobuf-compiler libprotobuf-dev
+          
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+          
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
+        
       - name: Run tests
         run: cargo test --verbose
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install protoc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler libprotobuf-dev
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
+        
       - name: Run clippy
         run: cargo clippy -- -D warnings
-  format:
-    name: Format
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
+        
       - name: Run rustfmt
+        continue-on-error: true
         run: cargo fmt --all -- --check
-  docker:
-    name: Docker Build & Push
-    needs: [test, clippy]  # Removed format from needs since it's now optional
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        
       - name: Login to Docker Hub
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/rust-grpc-finance-server:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/rust-grpc-finance-server:${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/rust-grpc-finance-server:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/rust-grpc-finance-server:buildcache,mode=max
+          
+      - name: Verify Docker Authentication
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          echo "Testing Docker Hub connectivity..."
+          docker login --username ${{ secrets.DOCKERHUB_USERNAME }} --password ${{ secrets.DOCKERHUB_TOKEN }}
+          docker pull hello-world
+          
+      - name: Build and tag Docker image
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          docker build -t tembolo1284/rust-grpc-finance-server:latest .
+          docker tag tembolo1284/rust-grpc-finance-server:latest tembolo1284/rust-grpc-finance-server:${{ github.sha }}
+          
+      - name: Push Docker image
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          docker push tembolo1284/rust-grpc-finance-server:latest
+          docker push tembolo1284/rust-grpc-finance-server:${{ github.sha }}
