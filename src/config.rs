@@ -71,74 +71,82 @@ pub fn load_config() -> Result<Config, Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Once;
     use tempfile::tempdir;
+    use std::sync::Mutex;
 
-    // Used to ensure environment cleanup between tests
-    static INIT: Once = Once::new();
+    // Mutex to ensure tests don't run in parallel
+    static TEST_MUTEX: Mutex<()> = Mutex::new(());
 
-    fn setup() {
-        INIT.call_once(|| {
-            // Clean environment before running tests
-            env::remove_var("GRPC_CLIENT_HOST");
-            env::remove_var("CONFIG_PATH");
-        });
+    fn with_clean_env<F>(test: F)
+    where
+        F: FnOnce() + std::panic::UnwindSafe,
+    {
+        let _lock = TEST_MUTEX.lock().unwrap();
+        
+        // Store current env vars
+        let original_client_host = env::var("GRPC_CLIENT_HOST").ok();
+        let original_config_path = env::var("CONFIG_PATH").ok();
+        
+        // Clean environment
+        env::remove_var("GRPC_CLIENT_HOST");
+        env::remove_var("CONFIG_PATH");
+        
+        // Run the test
+        let result = std::panic::catch_unwind(test);
+        
+        // Restore original environment
+        match original_client_host {
+            Some(val) => env::set_var("GRPC_CLIENT_HOST", val),
+            None => env::remove_var("GRPC_CLIENT_HOST"),
+        }
+        match original_config_path {
+            Some(val) => env::set_var("CONFIG_PATH", val),
+            None => env::remove_var("CONFIG_PATH"),
+        }
+        
+        // Re-panic if the test panicked
+        if let Err(err) = result {
+            std::panic::resume_unwind(err);
+        }
     }
 
     #[test]
     fn test_default_config() {
-        setup();
-        env::remove_var("GRPC_CLIENT_HOST");
-        let config = Config::default();
-        assert_eq!(config.server.host, "0.0.0.0");
-        assert_eq!(config.server.port, 50051);
-        assert_eq!(config.client.host, "127.0.0.1");
-        assert_eq!(config.client.port, 50051);
+        with_clean_env(|| {
+            let config = Config::default();
+            assert_eq!(config.server.host, "0.0.0.0");
+            assert_eq!(config.server.port, 50051);
+            assert_eq!(config.client.host, "127.0.0.1");
+            assert_eq!(config.client.port, 50051);
+        });
     }
 
     #[test]
     fn test_default_config_with_env() {
-        setup();
-        // First ensure the environment is clean
-        env::remove_var("GRPC_CLIENT_HOST");
-        
-        // Set the environment variable
-        env::set_var("GRPC_CLIENT_HOST", "test-host");
-        
-        // Create the default configuration
-        let config = Config::default();
-        
-        // Check that the environment variable overrides the default
-        assert_eq!(config.client.host, "test-host");
-        
-        // Clean up
-        env::remove_var("GRPC_CLIENT_HOST");
+        with_clean_env(|| {
+            env::set_var("GRPC_CLIENT_HOST", "test-host");
+            let config = Config::default();
+            assert_eq!(config.client.host, "test-host");
+        });
     }
 
     #[test]
     fn test_load_config_default() {
-        setup();
-        // Ensure no environment variables affect this test
-        env::remove_var("GRPC_CLIENT_HOST");
-        env::remove_var("CONFIG_PATH");
-
-        // Load the configuration
-        let config = load_config().unwrap();
-
-        // Verify defaults
-        assert_eq!(config.server.host, "0.0.0.0");
-        assert_eq!(config.server.port, 50051);
-        assert_eq!(config.client.host, "127.0.0.1");
-        assert_eq!(config.client.port, 50051);
+        with_clean_env(|| {
+            let config = load_config().unwrap();
+            assert_eq!(config.server.host, "0.0.0.0");
+            assert_eq!(config.server.port, 50051);
+            assert_eq!(config.client.host, "127.0.0.1");
+            assert_eq!(config.client.port, 50051);
+        });
     }
 
     #[test]
     fn test_load_custom_config() {
-        setup();
-        // Create a temporary directory for the custom configuration file
-        let dir = tempdir().unwrap();
-        let config_path = dir.path().join("config.toml");
-        let config_content = r#"
+        with_clean_env(|| {
+            let dir = tempdir().unwrap();
+            let config_path = dir.path().join("config.toml");
+            let config_content = r#"
 [server]
 host = "0.0.0.0"
 port = 50051
@@ -146,28 +154,18 @@ port = 50051
 host = "grpc-finance-server"
 port = 50051
 "#;
-        fs::write(&config_path, config_content).unwrap();
+            fs::write(&config_path, config_content).unwrap();
+            env::set_var("CONFIG_PATH", config_path.to_str().unwrap());
 
-        // Set the CONFIG_PATH environment variable to point to the custom config
-        env::set_var("CONFIG_PATH", config_path.to_str().unwrap());
+            let config = load_config().unwrap();
+            assert_eq!(config.server.host, "0.0.0.0");
+            assert_eq!(config.server.port, 50051);
+            assert_eq!(config.client.host, "grpc-finance-server");
+            assert_eq!(config.client.port, 50051);
 
-        // Ensure no GRPC_CLIENT_HOST override
-        env::remove_var("GRPC_CLIENT_HOST");
-
-        // Load the custom configuration
-        let config = load_config().unwrap();
-        assert_eq!(config.server.host, "0.0.0.0");
-        assert_eq!(config.server.port, 50051);
-        assert_eq!(config.client.host, "grpc-finance-server");
-        assert_eq!(config.client.port, 50051);
-
-        // Test environment override
-        env::set_var("GRPC_CLIENT_HOST", "test-host");
-        let config = load_config().unwrap();
-        assert_eq!(config.client.host, "test-host");
-
-        // Clean up environment variables
-        env::remove_var("CONFIG_PATH");
-        env::remove_var("GRPC_CLIENT_HOST");
+            env::set_var("GRPC_CLIENT_HOST", "test-host");
+            let config = load_config().unwrap();
+            assert_eq!(config.client.host, "test-host");
+        });
     }
 }
