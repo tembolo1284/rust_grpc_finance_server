@@ -69,8 +69,6 @@ RustGRPCFinanceServer/
   ```bash
   # Ubuntu/Debian
   sudo apt-get install protobuf-compiler
-  # macOS
-  brew install protobuf
   ```
 - Docker (optional, for containerized deployment)
 
