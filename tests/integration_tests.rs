@@ -1,5 +1,4 @@
 use rust_grpc_finance_server::{client, server};
-use tokio::task::JoinHandle;
 use tokio::time::{sleep, Duration};
 
 #[tokio::test]
