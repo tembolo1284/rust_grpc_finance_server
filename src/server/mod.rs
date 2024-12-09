@@ -47,9 +47,9 @@ pub async fn run_server(host: &str, port: u16) -> Result<(), Box<dyn std::error:
 
             if active_count == 0 {
                 inactivity_count += 1;
-                if inactivity_count >= 2 {
+                if inactivity_count >= 7 {
                     // 10 seconds of no activity
-                    println!("No active clients for 10 seconds. Initiating shutdown...");
+                    println!("No active clients for 30 seconds. Initiating shutdown...");
                     let _ = shutdown_tx.send(true);
                     break;
                 }
