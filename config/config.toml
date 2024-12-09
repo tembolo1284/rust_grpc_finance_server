@@ -3,5 +3,5 @@ host = "0.0.0.0"    # Listen on all interfaces
 port = 50051
 
 [client]
-host = "127.0.0.1"  # Use localhost for local development
+host = "grpc-finance-server"  # Use localhost for local development
 port = 50051
