@@ -37,7 +37,7 @@ impl Default for Config {
 }
 
 fn get_default_client_host() -> String {
-    env::var("GRPC_CLIENT_HOST").unwrap_or_else(|_| "127.0.0.1".to_string())
+    env::var("GRPC_CLIENT_HOST").unwrap_or_else(|_| "grpc-finance-server".to_string())
 }
 
 pub fn load_config() -> Result<Config, Box<dyn std::error::Error>> {
@@ -116,7 +116,7 @@ mod tests {
             let config = Config::default();
             assert_eq!(config.server.host, "0.0.0.0");
             assert_eq!(config.server.port, 50051);
-            assert_eq!(config.client.host, "127.0.0.1");
+            assert_eq!(config.client.host, "grpc-finance-server");
             assert_eq!(config.client.port, 50051);
         });
     }
@@ -136,7 +136,7 @@ mod tests {
             let config = load_config().unwrap();
             assert_eq!(config.server.host, "0.0.0.0");
             assert_eq!(config.server.port, 50051);
-            assert_eq!(config.client.host, "127.0.0.1");
+            assert_eq!(config.client.host, "grpc-finance-server");
             assert_eq!(config.client.port, 50051);
         });
     }
